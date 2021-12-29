@@ -42,19 +42,21 @@ class DroneAgent:
         ##### bfs distance dict ################################
         adj_dict = self.set_up_graph(self.map)
         dist_table = {}
+        shortest_paths = {}
         for point, value in adj_dict.items():
             if self.map[point[0]][point[1]] == 'I':
                 continue
             dist_table[point] = {}
+            shortest_paths[point] = {}
         for index_1, y in enumerate(self.map):
             for index_2, x in enumerate(y):
                 if self.map[index_1][index_2] == 'I':
                     continue
                 root = (index_1, index_2)
                 self.bfs(graph=adj_dict, root=root)
-                self.fill_table(graph=adj_dict, node=root, dist_table=dist_table)
+                self.fill_table(graph=adj_dict, node=root, dist_table=dist_table, shortest_paths=shortest_paths)
                 self.reset(self.map, adj_dict)
-
+        self.shortest_paths = shortest_paths
         self.bfs_dist = dist_table
         self.best_match = self.find_best_match(data)
         print("hi")
@@ -120,12 +122,10 @@ class DroneAgent:
     def bfs(self, graph, root):
         visited = []  # List to keep track of visited nodes.
         queue = []  # Initialize a queue
-
         graph[root][1][0] = 'grey'
         graph[root][1][1] = 0
         visited.append(root)
         queue.append(root)
-
         while queue:
             s = queue.pop(0)
             for neighbour in graph[s][0]:
@@ -135,6 +135,12 @@ class DroneAgent:
                     graph[neighbour][1][2] = s
                     queue.append(neighbour)
 
-    def fill_table(self, graph, node, dist_table):
+    def fill_table(self, graph, node, dist_table, shortest_paths):
         for vertix in graph:
+            shortest_paths[node][vertix] = []
             dist_table[node][vertix] = graph[vertix][1][1]
+            curr_vertix = vertix
+            while curr_vertix != node:
+                curr_vertix = graph[curr_vertix][1][2]
+                shortest_paths[node][vertix].append(curr_vertix)
+        # print("cat")
