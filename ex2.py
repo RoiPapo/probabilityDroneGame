@@ -6,6 +6,9 @@ import itertools
 def all_possible_matches(state):
     drone_lst = list(state["drones"].keys())
     packs_lst = list(state["packages"].keys())
+    if len(drone_lst) < len(packs_lst):
+        all_matches = [list(zip(drone_lst,x)) for x in itertools.permutations(packs_lst, len(drone_lst))]
+        return all_matches
     all_matches = [list(zip(x, packs_lst)) for x in itertools.permutations(drone_lst, len(packs_lst))]
     return all_matches
 
@@ -78,7 +81,9 @@ class DroneAgent:
         return all_matches
 
     def act(self, state):
-        print("hi")
+        # for package in self.best_match.keys():
+        #     if
+        pass
 
     def set_up_graph(self, map):
         adj_dict = {}
