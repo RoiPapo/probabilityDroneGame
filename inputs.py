@@ -4,7 +4,7 @@ small_inputs = [
                 ['P', 'P', 'P', 'P'],
                 ['P', 'I', 'P', 'P'],
                 ['P', 'P', 'P', 'P'], ],
-        "drones": {'drone 1': (3, 3)},
+        "drones": {'drone 1': (3, 3),'drone 2': (3, 3),'drone 3': (1, 2)},
         "packages": {'package 1': (2, 2),
                      'package 2': (1, 1)},
         "clients": {'Alice': {"location": (0, 1),

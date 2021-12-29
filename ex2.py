@@ -1,4 +1,13 @@
 ids = ["316327451", "318295029"]
+import copy
+import itertools
+
+
+def all_possible_matches(state):
+    drone_lst = list(state["drones"].keys())
+    packs_lst = list(state["packages"].keys())
+    all_matches = [list(zip(x, packs_lst)) for x in itertools.permutations(drone_lst, len(packs_lst))]
+    return all_matches
 
 
 class DroneAgent:
@@ -30,7 +39,7 @@ class DroneAgent:
             if package_dict['belong'] != 'null':
                 used_packages[package] = package_dict
         data['packages'] = used_packages
- ##### bfs distance dict ################################
+        ##### bfs distance dict ################################
         adj_dict = self.set_up_graph(self.map)
         dist_table = {}
         for point, value in adj_dict.items():
@@ -47,17 +56,27 @@ class DroneAgent:
                 self.reset(self.map, adj_dict)
 
         self.bfs_dist = dist_table
+        self.best_match = self.find_best_match(data)
+        print("hi")
 
+    def find_best_match(self, state):
+        all_matches = all_possible_matches(state)
+        evaluated_matches = self.evaluate_matches(all_matches, state)
+        evaluated_matches.sort(key=lambda x: x[2])
+        return evaluated_matches[0]
 
-    # def find_match(self, state):
-    #     drones_dict
-    #     for drone in state["drones"]:
-    #         dist_dict[drone] = []
-    #         for pack in state["packages"]:
-
+    def evaluate_matches(self, all_matches, state):
+        for match in all_matches:
+            counter = 0
+            for dist in match:
+                d = dist[0]
+                p = dist[1]
+                counter += self.bfs_dist[state['drones'][d]['loc']][state['packages'][p]['loc']]
+            match.append(counter)
+        return all_matches
 
     def act(self, state):
-        pass
+        print("hi")
 
     def set_up_graph(self, map):
         adj_dict = {}
