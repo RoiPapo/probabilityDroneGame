@@ -17,7 +17,7 @@ def main():
         "turns to go": 100
     }
     value_iteration_output = value_iteration((0.6, 0.1, 0.1, 0.1, 0.1), input['map'], 50)
-    best_action = cal_best_action(((3,3),(0,1)),10,value_iteration_output,input['map'],(0.6, 0.1, 0.1, 0.1, 0.1))
+    best_action = cal_best_action(((3, 3), (0, 1)), 10, value_iteration_output, input['map'], (0.6, 0.1, 0.1, 0.1, 0.1))
     print(best_action)
 
 
@@ -31,7 +31,7 @@ def value_iteration(probabilities, map, T):
         T - number of remaining rounds
     """
     probabilities = list(probabilities)
-    value_iteration_output = list(range(0,T))
+    value_iteration_output = list(range(0, T))
     ############# Creating states ############################
     flat_map = []
     for index_1, sublist in enumerate(map):
@@ -86,22 +86,22 @@ def cal_probability(map, client_loc, probabilities):
     y = client_loc[1]
     if x - 1 < 0:
         probabilities[0] = 0
-        future_loc[0] = client_loc # I assigned the current location for easing the programing - doesnt use it anyway
+        future_loc[0] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
     else:
         future_loc[0] = (client_loc[0] - 1, client_loc[1])
     if y - 1 < 0:
         probabilities[2] = 0
-        future_loc[2] = client_loc # I assigned the current location for easing the programing - doesnt use it anyway
+        future_loc[2] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
     else:
         future_loc[2] = (client_loc[0], client_loc[1] - 1)
     if x + 1 >= len(map):
         probabilities[1] = 0
-        future_loc[1] = client_loc # I assigned the current location for easing the programing - doesnt use it anyway
+        future_loc[1] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
     else:
         future_loc[1] = (client_loc[0] + 1, client_loc[1])
     if y + 1 >= len(map[0]):
         probabilities[3] = 0
-        future_loc[3] = client_loc # I assigned the current location for easing the programing - doesnt use it anyway
+        future_loc[3] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
     else:
         future_loc[3] = (client_loc[0], client_loc[1] + 1)
 
@@ -131,21 +131,24 @@ def cal_possible_actions(map, drone_loc):
         possible_actions.append((index_1 + 1, index_2 + 1))
     return possible_actions
 
-def cal_best_action(state, t,value_iteration_output,map,probabilities):
+
+def cal_best_action(state, t, value_iteration_output, map, probabilities):
     probabilities = list(probabilities)
     drone_loc = state[0]
     client_loc = state[1]
-    possible_actions = cal_possible_actions(map,drone_loc)
+    possible_actions = cal_possible_actions(map, drone_loc)
     best_action = possible_actions[1]
     probabilities_and_locations = cal_probability(map, client_loc, probabilities)
     for action in possible_actions:
         expectation = 0
         prev_expectation = 0
         for probability, drone_loc in probabilities_and_locations:
-            expectation += probability * value_iteration_output[t-1][(action, drone_loc)]
+            expectation += probability * value_iteration_output[t - 1][(action, drone_loc)]
         if expectation > prev_expectation:
             best_action = action
             prev_expectation = expectation
     return best_action
+
+
 if __name__ == '__main__':
     main()
