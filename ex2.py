@@ -88,7 +88,7 @@ class DroneAgent:
         drones_holding = []
         for package in state['packages'].keys():
             if package not in self.data['packages'].keys():
-                continue # makes sure that we dont try to give package that dosent belong to anyone
+                continue  # makes sure that we dont try to give package that dosent belong to anyone
             relevant_match = [item for item in self.best_match[:-1] if item[1] == package]
             if len(relevant_match) == 0:
                 continue
@@ -119,6 +119,9 @@ class DroneAgent:
 
         ############ part 2 ####################
 
+        for drone in self.idle_drones:
+            all_actions.append(('wait', str(drone)))
+
         steps_left = state["turns to go"]
         for (drone, package) in drones_holding:
             packages_owner = self.data["packages"][package]["belong"]
@@ -129,16 +132,20 @@ class DroneAgent:
                                                   state['clients'][packages_owner]['probabilities'])
             if current_drone_client_loc[0] == current_drone_client_loc[1]:
                 all_actions.append(("deliver", str(drone), str(packages_owner), str(package)))
+                self.idle_drones.add(drone)
+                drones_holding.remove((drone, package))
 
             elif future_drone_loc_VI == state['drones'][drone]:
                 all_actions.append(('wait', str(drone)))
             else:
                 all_actions.append(('move', str(drone), future_drone_loc_VI))
 
-        for drone in self.idle_drones:
-            all_actions.append(('wait', str(drone)))
+
         if len(all_actions) == 0:
-            print ("WTF")
+            return "terminate"
+
+        if len(all_actions) == 3:
+            print("WTF")
 
         return tuple(all_actions)
 
