@@ -66,6 +66,8 @@ class DroneAgent:
         self.best_match = self.find_best_match(data)
         self.best_match_current = copy.deepcopy(self.best_match)
         self.value_iteration_tables = {}
+        self.avg_run = 0
+        self.turn_counter = 0
         # self.BZ_Drones = [item[0] for item in self.best_match[:-1]]
         # self.idle_drones = set(self.data["drones"]) - set(self.BZ_Drones)
 
@@ -85,21 +87,7 @@ class DroneAgent:
             match.append(counter)
         return all_matches
 
-    # def check_drone_status(self, state):
-    #     drones_before_taking = []
-    #     drones_holding = []
-    #     for package in state['packages'].keys():
-    #         if package not in self.data['packages'].keys():
-    #             continue  # makes sure that we dont try to give package that dosent belong to anyone
-    #         relevant_match = [item for item in self.best_match[:-1] if item[1] == package]
-    #         if len(relevant_match) == 0:
-    #             continue
-    #
-    #         if isinstance(state['packages'][package], str):
-    #             drones_holding.append(relevant_match[0])
-    #         else:
-    #             drones_before_taking.append(relevant_match[0])
-    #     return drones_before_taking, drones_holding
+
     def check_drone_status(self, state):
         drones_before_taking = []
         drones_holding = []
@@ -137,7 +125,7 @@ class DroneAgent:
                 # if self.shortest_paths[pack_loc][drone_loc][-1] == pack_loc:
                 #     self.shortest_paths[pack_loc][drone_loc].pop()
                 all_actions.append(('move', match[0], self.shortest_paths_current[pack_loc][drone_loc][0]))
-                del self.shortest_paths_current[pack_loc][drone_loc][0]
+                # del self.shortest_paths_current[pack_loc][drone_loc][0]
 
         ############ part 2 ####################
 
@@ -145,14 +133,44 @@ class DroneAgent:
             all_actions.append(('wait', str(drone)))
 
         if len(state["packages"]) == 0 or len(state["drones"].keys()) == len(idle_drones):
+            if self.avg_run == 0:
+                self.avg_run = self.turn_counter
+            self.turn_counter = 0
+            if state["turns to go"] < self.avg_run:
+                print("terminate")
+                return "terminate"
+
             print("reset")
             self.shortest_paths_current = copy.deepcopy(self.shortest_paths)
             self.best_match_current = copy.deepcopy(self.best_match)
+
             return "reset"
 
         steps_left = state["turns to go"]
         for (drone, package) in drones_holding:
             packages_owner = self.data["packages"][package]["belong"]
+            client_curr_location = state["clients"][packages_owner]["location"]
+            drone_cur_location = state["drones"][drone]
+            owner_probs = state["clients"][packages_owner]["probabilities"]
+            probs = cal_probability(self.map, client_curr_location, owner_probs)
+            max_index = probs.index(max(probs))
+            next_client_location= probs[max_index][1]
+            # (up, down, left, right, or stay in place).
+            client_next_location= client_curr_location
+            if self.map[client_curr_location[0]][client_curr_location[1]] != 'I':
+                if self.bfs_dist[drone_cur_location][client_curr_location] > 0:
+                    all_actions.append(
+                        ('move', drone, self.shortest_paths_current[client_curr_location][drone_cur_location][0]))
+                    continue
+            if self.map[next_client_location[0]][next_client_location[1]] != 'I':
+                if self.bfs_dist[drone_cur_location][next_client_location] > 1:
+                    all_actions.append(
+                        ('move', drone, self.shortest_paths_current[next_client_location][drone_cur_location][0]))
+                    continue
+
+
+
+
             current_drone_client_loc = (state['drones'][drone], state['clients'][packages_owner]['location'])
             future_drone_loc_VI = cal_best_action(current_drone_client_loc, steps_left,
                                                   self.value_iteration_tables[drone],
@@ -166,10 +184,9 @@ class DroneAgent:
                     for forgotten_pack in forgotten_packages:
                         temp_dist_dict[forgotten_pack] = self.bfs_dist[state["drones"][drone]][
                             self.data["packages"][forgotten_pack]["loc"]]
-                    # temp_dist_dict = {k: v for k, v in sorted(temp_dist_dict.items(), key=lambda item: item[1])}
                     self.best_match_current.insert(0, (drone, min(temp_dist_dict, key=temp_dist_dict.get)))
 
-                    # self.data['packages'].pop(package)
+
 
 
             elif future_drone_loc_VI == state['drones'][drone]:
@@ -177,14 +194,11 @@ class DroneAgent:
             else:
                 all_actions.append(('move', str(drone), future_drone_loc_VI))
 
-        # if len(all_actions) == 2:
-        # print("WTF")
-
-        if len(all_actions) != len(state["drones"].keys()):
-            print("wtf")
-            # all_actions.append(('wait', 'drone 1'))
-        print(tuple(all_actions))
-
+        # if len(all_actions) != len(state["drones"].keys()):
+        #     print("wtf")
+        # all_actions.append(('wait', 'drone 1'))
+        # print(tuple(all_actions))
+        self.avg_run += 1
         return tuple(all_actions)
 
     def set_up_graph(self, map):
@@ -313,6 +327,14 @@ def value_iteration(probabilities, map, T):
 
 
 def cal_probability(map, client_loc, probabilities):
+    """
+
+    :param map:
+    :param client_loc:
+    :param probabilities:
+    :return:
+    """
+    probabilities = list(probabilities)
     probabilities = probabilities.copy()
     future_loc = [0, 0, 0, 0, client_loc]
     x = client_loc[0]
