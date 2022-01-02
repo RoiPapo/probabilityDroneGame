@@ -114,11 +114,16 @@ class DroneAgent:
                 drones_holding.append(relevant_match[0])
             else:
                 drones_before_taking.append(relevant_match[0])
-        return drones_before_taking, drones_holding
+        return drones_before_taking, drones_holding, idle_drones
+
+    def check_valid_match(self, relevant_match, state):
+        if relevant_match[1] in state['packages'].keys():
+            return True
+        return False
 
     def act(self, state):
         all_actions = []
-        drones_before_taking, drones_holding = self.check_drone_status(state)
+        drones_before_taking, drones_holding, idle_drones = self.check_drone_status(state)
         for match in drones_before_taking:
             drone_loc = state['drones'][match[0]]
             pack_loc = state['packages'][match[1]]
