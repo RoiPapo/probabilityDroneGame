@@ -64,8 +64,8 @@ class DroneAgent:
         self.bfs_dist = dist_table
         self.best_match = self.find_best_match(data)
         self.value_iteration_tables = {}
-        BZ_Drones = [item[0] for item in self.best_match[:-1]]
-        self.idle_drones = set(self.data["drones"]) - set(BZ_Drones)
+        self.BZ_Drones = [item[0] for item in self.best_match[:-1]]
+        self.idle_drones = set(self.data["drones"]) - set(self.BZ_Drones)
 
     def find_best_match(self, state):
         all_matches = all_possible_matches(state)
@@ -140,12 +140,16 @@ class DroneAgent:
             else:
                 all_actions.append(('move', str(drone), future_drone_loc_VI))
 
+        if len(state["packages"]) == 0:
+            return "reset"
 
-        if len(all_actions) == 0:
-            return "terminate"
+        # if len(all_actions) == 2:
+        # print("WTF")
 
-        if len(all_actions) == 3:
-            print("WTF")
+        if len(all_actions) != len(state["drones"].keys()):
+            print("wtf")
+            # all_actions.append(('wait', 'drone 1'))
+        print(tuple(all_actions))
 
         return tuple(all_actions)
 
@@ -214,7 +218,6 @@ class DroneAgent:
                 shortest_paths[node][vertix].append(curr_vertix)
         # print("cat")
 
-
 ################################## value_iteration ########################################
 
 def value_iteration(probabilities, map, T):
@@ -258,22 +261,20 @@ def value_iteration(probabilities, map, T):
             drone_loc = state[0]
             client_loc = state[1]
             probabilities_and_locations = cal_probability(map, client_loc, probabilities)
-            possible_actions = cal_possible_actions(map, drone_loc)
+            possible_drone_locations = cal_possible_actions(map, drone_loc)
             max_value = 0
-            for action in possible_actions:
+            for possible_drone_location in possible_drone_locations:
                 expectation = 0
-                prev_expectation = 0
-                for probability, drone_loc in probabilities_and_locations:
-                    expectation += probability * Value_per_State_t_minus_1[(action, drone_loc)]
-                if expectation > prev_expectation:
-                    prev_expectation = expectation
-            max_value = prev_expectation
+                for probability, client_possible_loc in probabilities_and_locations:
+                    expectation += probability * Value_per_State_t_minus_1[
+                        (possible_drone_location, client_possible_loc)]
+                if expectation > max_value:
+                    max_value = expectation
             Value_per_State_t[state] = Rewards[state] + max_value
         value_iteration_output[epoch] = Value_per_State_t
         Value_per_State_t_minus_1 = Value_per_State_t
 
     return value_iteration_output
-
 
 def cal_probability(map, client_loc, probabilities):
     probabilities = probabilities.copy()
@@ -282,28 +283,31 @@ def cal_probability(map, client_loc, probabilities):
     y = client_loc[1]
     if x - 1 < 0:
         probabilities[0] = 0
-        future_loc[0] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
+        future_loc[
+            0] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
     else:
         future_loc[0] = (client_loc[0] - 1, client_loc[1])
     if y - 1 < 0:
         probabilities[2] = 0
-        future_loc[2] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
+        future_loc[
+            2] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
     else:
         future_loc[2] = (client_loc[0], client_loc[1] - 1)
     if x + 1 >= len(map):
         probabilities[1] = 0
-        future_loc[1] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
+        future_loc[
+            1] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
     else:
         future_loc[1] = (client_loc[0] + 1, client_loc[1])
     if y + 1 >= len(map[0]):
         probabilities[3] = 0
-        future_loc[3] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
+        future_loc[
+            3] = client_loc  # I assigned the current location for easing the programing - doesnt use it anyway
     else:
         future_loc[3] = (client_loc[0], client_loc[1] + 1)
 
     probabilities = [[x / sum(probabilities), future_loc[index]] for index, x in enumerate(probabilities)]
     return probabilities
-
 
 def cal_possible_actions(map, drone_loc):
     possible_actions = [drone_loc]
@@ -327,7 +331,6 @@ def cal_possible_actions(map, drone_loc):
         possible_actions.append((index_1 + 1, index_2 + 1))
     return possible_actions
 
-
 def cal_best_action(state, t, value_iteration_output, map, probabilities):
     probabilities = list(probabilities)
     drone_loc = state[0]
@@ -335,12 +338,12 @@ def cal_best_action(state, t, value_iteration_output, map, probabilities):
     possible_actions = cal_possible_actions(map, drone_loc)
     best_action = possible_actions[1]
     probabilities_and_locations = cal_probability(map, client_loc, probabilities)
+    max_value = 0
     for action in possible_actions:
         expectation = 0
-        prev_expectation = 0
         for probability, drone_loc in probabilities_and_locations:
             expectation += probability * value_iteration_output[t - 1][(action, drone_loc)]
-        if expectation > prev_expectation:
+        if expectation > max_value:
             best_action = action
-            prev_expectation = expectation
+            max_value = expectation
     return best_action
