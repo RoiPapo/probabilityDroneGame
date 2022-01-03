@@ -6,6 +6,10 @@ ids = ["316327451", "318295029"]
 
 class DroneAgent:
     def __init__(self, initial):
+        self.avg_run = 0
+        self.turn_counter = 0
+        self.number_of_resets = 0
+        self.times = []
         self.init_state = initial
         self.map = initial['map']
         self.I_locations = []
@@ -14,10 +18,7 @@ class DroneAgent:
             for j, y in enumerate(x):
                 if y == 'I':
                     self.I_locations.append((i, j))
-        self.avg_run = 0
-        self.turn_counter = 0
-        self.number_of_resets = 0
-        self.times = []
+
 
         ################ bfs distance dict ################################
         adj_dict = self.set_up_graph(self.map)
