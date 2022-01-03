@@ -117,26 +117,26 @@ class DroneAgent:
 
     def act(self, state):
         self.turn_counter += 1
+        p_num = len(state['packages'])
         final_actions = []
-        if len(state['packages']) == 0:
+        if p_num == 0:
             return self.send_reset(state)
         for drone_name, drone_loc in state['drones'].items():
-            priority = 0
-            # deliver
-            priority = self.delivery(state, drone_name, drone_loc, final_actions)
-            if priority == 1:
+            ###### DELIVER #########
+            chosen_action = self.delivery(state, drone_name, drone_loc, final_actions)
+            if chosen_action == 1:
                 continue
-            # pick up
-            priority = self.pick_up(state, drone_name, drone_loc, final_actions)
-            if priority == 1:
+            ####### PICK #############
+            chosen_action = self.pick_up(state, drone_name, drone_loc, final_actions)
+            if chosen_action == 1:
                 continue
-            # move
-            priority = self.move_drone(state, drone_name, drone_loc, final_actions)
-        count_acts = 0
+            ####### MOVE ###############
+            chosen_action = self.move_drone(state, drone_name, drone_loc, final_actions)
+        wait_in_place_counter = 0
         for act in final_actions:
             if act[0] == 'wait':
-                count_acts += 1
-        if count_acts >= len(final_actions):
+                wait_in_place_counter += 1
+        if wait_in_place_counter >= len(final_actions):
             self.count_waits += 1
         else:
             self.count_waits = 0
@@ -187,7 +187,7 @@ class DroneAgent:
         packages_on_drone = self.pack_carry_drone(state, drone_name)
         if packages_on_drone:
             client_name = self.package_per_client(state, packages_on_drone[0])
-            client_next_move = self.prob_client_next_move(state, client_name, state['clients'][client_name]['location'])
+            client_next_move = self.most_likely_move(state, client_name)
             next_move = self.make_best_move(drone_loc, client_next_move)
         elif self.no_products_to_carry(state):
             final_actions.append(['wait', drone_name])
@@ -207,40 +207,35 @@ class DroneAgent:
                 return False
         return True
 
-    def prob_client_next_move(self, state, client_name, client_loc):
-        probs_client = state['clients'][client_name]['probabilities']
-        prob_client = self.cal_probability(client_loc, probs_client)
-        next_loc = max(prob_client, key=lambda x: x[0])
-        return next_loc[1]
-
-    def cal_probability(self, client_loc, probabilities):
-        probabilities = list(probabilities).copy()
-        future_loc = [0, 0, 0, 0, client_loc]
-        x = client_loc[0]
-        y = client_loc[1]
+    def most_likely_move(self, state, client_name):
+        x, y = state['clients'][client_name]['location']
+        probabilities = list(state['clients'][client_name]['probabilities']).copy()
+        future_loc = [0, 0, 0, 0, (x,y)]
         if x - 1 < 0:
             probabilities[0] = 0
             future_loc[0] = 'Null'
         else:
-            future_loc[0] = (client_loc[0] - 1, client_loc[1])
+            future_loc[0] = (x - 1, y)
         if y - 1 < 0:
             probabilities[2] = 0
             future_loc[2] = 'Null'
         else:
-            future_loc[2] = (client_loc[0], client_loc[1] - 1)
+            future_loc[2] = (x, y - 1)
         if x + 1 >= len(self.map):
             probabilities[1] = 0
             future_loc[1] = 'Null'
         else:
-            future_loc[1] = (client_loc[0] + 1, client_loc[1])
+            future_loc[1] = (x + 1, y)
         if y + 1 >= len(self.map[0]):
             probabilities[3] = 0
             future_loc[3] = 'Null'
         else:
-            future_loc[3] = (client_loc[0], client_loc[1] + 1)
+            future_loc[3] = (x, y + 1)
 
         probabilities = [[x / sum(probabilities), future_loc[index]] for index, x in enumerate(probabilities)]
-        return probabilities
+        next_loc = max(probabilities, key=lambda x: x[0])
+        return next_loc[1]
+
 
     def make_best_move(self, drone_loc, dest_loc):
         simple_moves = [[1, 0], [0, 1], [1, 1], [-1, 1], [-1, -1], [1, -1], [0, -1], [-1, 0], [0, 0]]
