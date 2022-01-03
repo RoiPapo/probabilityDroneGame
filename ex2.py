@@ -19,9 +19,8 @@ class DroneAgent:
                 if y == 'I':
                     self.I_locations.append((i, j))
 
-
-        ################ bfs distance dict ################################
-        adj_dict = self.set_up_graph(self.map)
+        ################ CREATE BFS LOOKUP TABLE ################################
+        adj_dict = self.build_Graph()
         dist_table = {}
         shortest_paths = {}
         for point, value in adj_dict.items():
@@ -36,52 +35,52 @@ class DroneAgent:
                 root = (index_1, index_2)
                 self.bfs(graph=adj_dict, root=root)
                 self.fill_table(graph=adj_dict, node=root, dist_table=dist_table, shortest_paths=shortest_paths)
-                self.reset(self.map, adj_dict)
+                self.reset(adj_dict)
         self.shortest_paths = shortest_paths
         self.bfs_dist = dist_table
 
-    def set_up_graph(self, map):
+    def build_Graph(self):
         adj_dict = {}
 
-        for index_1, y in enumerate(map):
-            for index_2, x in enumerate(y):
-                if map[index_1][index_2] == 'P':
-                    adj_dict[(index_1, index_2)] = ([], ['white', 1000000, 'null'])
+        for x, inner_vec in enumerate(self.map):
+            for y in range(len(inner_vec)):
+                if self.map[x][y] == 'P':
+                    adj_dict[(x, y)] = ([], ['white', 1000000, 'null'])
 
-        for index_1, y in enumerate(map):
-            for index_2, x in enumerate(y):
-                if map[index_1][index_2] == 'I':
+        for x, inner_vec in enumerate(self.map):
+            for y in range(len(inner_vec)):
+                if self.map[x][y] == 'I':
                     continue
-                if index_1 - 1 >= 0 and map[index_1 - 1][index_2] == 'P':
-                    adj_dict[(index_1, index_2)][0].append((index_1 - 1, index_2))
-                if index_1 + 1 < len(map) and map[index_1 + 1][index_2] == 'P':
-                    adj_dict[(index_1, index_2)][0].append((index_1 + 1, index_2))
-                if index_2 - 1 >= 0 and map[index_1][index_2 - 1] == 'P':
-                    adj_dict[(index_1, index_2)][0].append((index_1, index_2 - 1))
-                if index_2 + 1 < len(map[0]) and map[index_1][index_2 + 1] == 'P':
-                    adj_dict[(index_1, index_2)][0].append((index_1, index_2 + 1))
-                if index_1 - 1 >= 0 and index_2 - 1 >= 0 and map[index_1 - 1][index_2 - 1] == 'P':
-                    adj_dict[(index_1, index_2)][0].append((index_1 - 1, index_2 - 1))
-                if index_1 - 1 >= 0 and index_2 + 1 < len(map[0]) and map[index_1 - 1][index_2 + 1] == 'P':
-                    adj_dict[(index_1, index_2)][0].append((index_1 - 1, index_2 + 1))
-                if index_1 + 1 < len(map) and index_2 - 1 >= 0 and map[index_1 + 1][index_2 - 1] == 'P':
-                    adj_dict[(index_1, index_2)][0].append((index_1 + 1, index_2 - 1))
-                if index_1 + 1 < len(map) and index_2 + 1 < len(map[0]) and map[index_1 + 1][index_2 + 1] == 'P':
-                    adj_dict[(index_1, index_2)][0].append((index_1 + 1, index_2 + 1))
+                if x - 1 >= 0 and self.map[x - 1][y] == 'P':
+                    adj_dict[(x, y)][0].append((x - 1, y))
+                if x + 1 < len(self.map) and self.map[x + 1][y] == 'P':
+                    adj_dict[(x, y)][0].append((x + 1, y))
+                if y - 1 >= 0 and self.map[x][y - 1] == 'P':
+                    adj_dict[(x, y)][0].append((x, y - 1))
+                if y + 1 < len(self.map[0]) and self.map[x][y + 1] == 'P':
+                    adj_dict[(x, y)][0].append((x, y + 1))
+                if x - 1 >= 0 and y - 1 >= 0 and self.map[x - 1][y - 1] == 'P':
+                    adj_dict[(x, y)][0].append((x - 1, y - 1))
+                if x - 1 >= 0 and y + 1 < len(self.map[0]) and self.map[x - 1][y + 1] == 'P':
+                    adj_dict[(x, y)][0].append((x - 1, y + 1))
+                if x + 1 < len(self.map) and y - 1 >= 0 and self.map[x + 1][y - 1] == 'P':
+                    adj_dict[(x, y)][0].append((x + 1, y - 1))
+                if x + 1 < len(self.map) and y + 1 < len(self.map[0]) and self.map[x + 1][y + 1] == 'P':
+                    adj_dict[(x, y)][0].append((x + 1, y + 1))
 
         return adj_dict
 
-    def reset(self, map, adj_dict):
-        for index_1, y in enumerate(map):
-            for index_2, x in enumerate(y):
-                if map[index_1][index_2] == 'P':
-                    adj_dict[(index_1, index_2)][1][0] = 'white'
-                    adj_dict[(index_1, index_2)][1][1] = 1000000
-                    adj_dict[(index_1, index_2)][1][2] = 'null'
+    def reset(self, adj_dict):
+        for x, inner_vec in enumerate(self.map):
+            for y in range(len(inner_vec)):
+                if self.map[x][y] == 'P':
+                    adj_dict[(x, y)][1][0] = 'white'
+                    adj_dict[(x, y)][1][1] = 1000000
+                    adj_dict[(x, y)][1][2] = 'null'
 
     def bfs(self, graph, root):
-        visited = []  # List to keep track of visited nodes.
-        queue = []  # Initialize a queue
+        visited = []
+        queue = []
         graph[root][1][0] = 'grey'
         graph[root][1][1] = 0
         visited.append(root)
@@ -109,7 +108,7 @@ class DroneAgent:
         self.times.append(self.turn_counter)
         self.turn_counter = 0
         self.number_of_resets += 1
-        self.avg_run = sum(self.times) / len(self.times)
+        self.avg_run = (sum(self.times)) / len(self.times)
         if self.avg_run >= state["turns to go"]:
             # print("terminate")
             return "terminate"
@@ -194,7 +193,7 @@ class DroneAgent:
             final_actions.append(['wait', drone_name])
             return 1
         else:
-            pack_details = self.find_closest_package(state, drone_name, drone_loc)
+            pack_details = self.find_closest_package(state, drone_loc)
             next_move = self.make_best_move(drone_loc, pack_details[2])
         if drone_loc == next_move:
             final_actions.append(['wait', drone_name])
@@ -211,7 +210,7 @@ class DroneAgent:
     def most_likely_move(self, state, client_name):
         x, y = state['clients'][client_name]['location']
         probabilities = list(state['clients'][client_name]['probabilities']).copy()
-        future_loc = [0, 0, 0, 0, (x,y)]
+        future_loc = [0, 0, 0, 0, (x, y)]
         if x - 1 < 0:
             probabilities[0] = 0
             future_loc[0] = 'Null'
@@ -237,7 +236,6 @@ class DroneAgent:
         next_loc = max(probabilities, key=lambda x: x[0])
         return next_loc[1]
 
-
     def make_best_move(self, drone_loc, dest_loc):
         simple_moves = [[1, 0], [0, 1], [1, 1], [-1, 1], [-1, -1], [1, -1], [0, -1], [-1, 0], [0, 0]]
         valid_moves = []
@@ -260,7 +258,7 @@ class DroneAgent:
             return True
         return False
 
-    def find_closest_package(self, state, drone_name, drone_loc):
+    def find_closest_package(self, state, drone_loc):
         out = []
         for pack_name, pack_loc in state['packages'].items():
             if type(pack_loc) != str:
@@ -298,3 +296,7 @@ class DroneAgent:
             if self.valid_move(checked_move):
                 valid_moves.append(checked_move)
         return valid_moves
+
+
+def manhattan(a, b):
+    return sum(abs(val1-val2) for val1, val2 in zip(a,b))
